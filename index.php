@@ -1,3 +1,14 @@
+<?php
+$conn = new mysqli("trees_db", "root", "123456", "trees_db");
+if (isset($_POST['new_node'])) {
+    $val = $_POST['new_node'];
+    $conn->query("INSERT INTO sakura_nodes (node_value) VALUES ($val)");
+}
+$res = $conn->query("SELECT node_value FROM sakura_nodes");
+$db_nodes = [];
+while($row = $res->fetch_assoc()) { $db_nodes[] = $row['node_value']; }
+?>
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
