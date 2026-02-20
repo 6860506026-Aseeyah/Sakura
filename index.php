@@ -88,9 +88,9 @@ $treeDataJSON = json_encode($_SESSION['root'] ?? null);
         .order-row { margin: 8px 0; font-size: 14px; color: #444; }
         .tag { font-weight: bold; color: #ad1457; display: inline-block; width: 90px; }
         
-        /* สไตล์สำหรับส่วนคู่มือจากรูปภาพ */
-        .guide-item { margin-bottom: 10px; font-size: 14px; display: flex; align-items: center; color: #2e7d32; }
-        .dot { height: 12px; width: 12px; background-color: #a5d6a7; border-radius: 50%; display: inline-block; margin-right: 12px; border: 2px solid #66bb6a; }
+        /* เปลี่ยนเป็นสีชมพู (Pink Theme) */
+        .guide-item { margin-bottom: 10px; font-size: 14px; display: flex; align-items: center; color: #ad1457; }
+        .dot { height: 12px; width: 12px; background-color: #fce4ec; border-radius: 50%; display: inline-block; margin-right: 12px; border: 2px solid #ff80ab; }
 
         @media (max-width: 650px) { .info-grid { grid-template-columns: 1fr; } }
     </style>
@@ -156,5 +156,4 @@ $treeDataJSON = json_encode($_SESSION['root'] ?? null);
 
 </body>
 </html>
-
 
