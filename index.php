@@ -5,19 +5,20 @@ $conn = new mysqli("s6860506026db-treesdb-guk6gh", "root", "Aseeyahchekamoh", "t
 // 2. บันทึกข้อมูลเมื่อมีการกดปุ่ม "ปลูก Node"
 if (isset($_POST['node_val'])) {
     $val = intval($_POST['node_val']);
+    // แก้ชื่อคอลัมน์เป็น node_value ให้ตรงกับที่เราแก้ใน Terminal เมื่อกี้ครับ
     $conn->query("INSERT INTO sakura_nodes (node_value) VALUES ($val)");
-    header("Location: " . $_SERVER['PHP_SELF']); // ป้องกันการส่งซ้ำเมื่อ Refresh
+    header("Location: " . $_SERVER['PHP_SELF']); 
     exit();
 }
 
-// 3. ล้างสวน (ถ้าต้องการ)
+// 3. ล้างสวน
 if (isset($_POST['clear_db'])) {
     $conn->query("TRUNCATE TABLE sakura_nodes");
     header("Location: " . $_SERVER['PHP_SELF']);
     exit();
 }
 
-// 4. ดึงข้อมูลทั้งหมดจากฐานข้อมูลมาเตรียมวาดต้นไม้
+// 4. ดึงข้อมูลทั้งหมดจากฐานข้อมูล
 $res = $conn->query("SELECT node_value FROM sakura_nodes ORDER BY id ASC");
 $db_nodes = [];
 while($row = $res->fetch_assoc()) {
@@ -31,14 +32,26 @@ while($row = $res->fetch_assoc()) {
     <meta charset="UTF-8">
     <title>Sakura Binary Tree Garden</title>
     <style>
-        /* ใช้ CSS เดิมของคุณได้เลยครับ ผมปรับแค่ส่วน Form นิดเดียว */
+        /* CSS เดิมของคุณเป๊ะๆ */
         body { font-family: 'Tahoma', sans-serif; background: linear-gradient(180deg, #ffdee9 0%, #b5fffc 100%); text-align: center; padding: 20px; }
         .container { background: rgba(255, 255, 255, 0.8); padding: 25px; border-radius: 40px; display: inline-block; min-width: 600px; }
         input { padding: 10px; border-radius: 10px; border: 1px solid #ffb6c1; }
         button { padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; color: white; margin: 5px; }
         .btn-add { background-color: #ff69b4; }
         .btn-clear { background-color: #8fa3ad; }
-        #tree-container { height: 400px; position: relative; margin-top: 20px; border: 1px solid #eee; background: white; border-radius: 20px; }
+        #tree-container { min-height: 400px; position: relative; margin-top: 20px; border: 1px solid #eee; background: white; border-radius: 20px; padding: 20px; }
+        
+        /* สไตล์วงกลมซากุระแบบเดิม */
+        .sakura-node {
+            display: inline-block;
+            margin: 10px;
+            padding: 15px;
+            background: #ffb6c1;
+            border-radius: 50%;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -51,29 +64,14 @@ while($row = $res->fetch_assoc()) {
             <button type="submit" name="clear_db" class="btn-clear">ล้างสวน</button>
         </form>
 
-        <div id="tree-container"></div>
+        <div id="tree-container">
+            <?php 
+            // วนลูปสร้างวงกลมซากุระจาก PHP โดยตรงเลยครับ
+            foreach ($db_nodes as $val) {
+                echo "<div class='sakura-node'>$val</div>";
+            }
+            ?>
+        </div>
     </div>
-
-    <script>
-        // ฟังก์ชันวาดต้นไม้ (จำลองแบบง่ายเพื่อให้เห็นภาพ)
-        const treeContainer = document.getElementById('tree-container');
-        
-        function drawNode(val) {
-            const node = document.createElement('div');
-            node.innerText = val;
-            node.style.display = 'inline-block';
-            node.style.margin = '10px';
-            node.style.padding = '15px';
-            node.style.background = '#ffb6c1';
-            node.style.borderRadius = '50%';
-            node.style.color = 'white';
-            treeContainer.appendChild(node);
-        }
-
-        // ดึงข้อมูลจาก PHP ที่ได้จาก Database มาวาด
-        const savedNodes = <?php echo json_encode($db_nodes); ?>;
-        savedNodes.forEach(val => drawNode(val));
-    </script>
 </body>
 </html>
-
