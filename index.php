@@ -1,6 +1,6 @@
 <?php
 // 1. เชื่อมต่อฐานข้อมูล
-$conn = new mysqli("s6860506026db-treesdb-guk6gh", "root", "Aseeyahchekamoh", "treedb");
+$conn = new mysqli("s6860506026db-treesdb-guk6gh", "root", "123456", "treedb");
 
 // 2. บันทึกข้อมูลเมื่อมีการกดปุ่ม "ปลูก Node"
 if (isset($_POST['node_val'])) {
