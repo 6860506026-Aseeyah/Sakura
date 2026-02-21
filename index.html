@@ -65,7 +65,6 @@
             box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
         }
 
-        /* --- ส่วนที่เพิ่มใหม่: แผงข้อมูล Traversal --- */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -154,19 +153,50 @@
     }
 
     let root = null;
+    // ดึงข้อมูลเก่าที่เคยเซฟไว้ในเครื่อง (ถ้ามี)
+    let nodesArray = JSON.parse(localStorage.getItem('sakuraTreeNodes')) || [];
+
     const canvas = document.getElementById('treeCanvas');
     const ctx = canvas.getContext('2d');
+
+    // เมื่อเปิดหน้าเว็บ หรือ Refresh ให้วาดต้นไม้คืนมาทันที
+    window.onload = function() {
+        if (nodesArray.length > 0) {
+            nodesArray.forEach(val => {
+                buildTreeFromValue(val);
+            });
+            render();
+        }
+    };
 
     function addNode() {
         const input = document.getElementById('nodeInput');
         const val = parseInt(input.value);
+        
         if (isNaN(val)) return;
 
-        if (!root) root = new Node(val);
-        else insertNode(root, val);
+        // ป้องกันเลขซ้ำเพื่อไม่ให้โครงสร้างสับสน
+        if (nodesArray.includes(val)) {
+            alert("เลขนี้ปลูกไปแล้วจ้า!");
+            input.value = '';
+            return;
+        }
 
+        // เก็บลงอาเรย์และบันทึกเข้า LocalStorage
+        nodesArray.push(val);
+        localStorage.setItem('sakuraTreeNodes', JSON.stringify(nodesArray));
+
+        buildTreeFromValue(val);
         input.value = '';
         render();
+    }
+
+    function buildTreeFromValue(val) {
+        if (!root) {
+            root = new Node(val);
+        } else {
+            insertNode(root, val);
+        }
     }
 
     function insertNode(node, val) {
@@ -219,7 +249,6 @@
         ctx.fillText(node.val, x, y + 5);
     }
 
-    // ฟังก์ชันคำนวณลำดับ (อ้างอิงหลักการจากรูปภาพ)
     function getPreorder(n, r=[]) { if(n){ r.push(n.val); getPreorder(n.left, r); getPreorder(n.right, r); } return r; }
     function getInorder(n, r=[]) { if(n){ getInorder(n.left, r); r.push(n.val); getInorder(n.right, r); } return r; }
     function getPostorder(n, r=[]) { if(n){ getPostorder(n.left, r); getPostorder(n.right, r); r.push(n.val); } return r; }
@@ -230,8 +259,11 @@
         document.getElementById('postText').innerText = getPostorder(root).join(' - ') || '-';
     }
 
+    // ฟังก์ชันล้างข้อมูลแบบกดปุ๊บลบปั๊บ
     function resetTree() {
         root = null;
+        nodesArray = [];
+        localStorage.removeItem('sakuraTreeNodes'); 
         render();
     }
 </script>
