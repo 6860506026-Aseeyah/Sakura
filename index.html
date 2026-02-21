@@ -153,19 +153,17 @@
     }
 
     let root = null;
-    // ดึงข้อมูลอาเรย์จาก localStorage ถ้าไม่มีให้เริ่มที่อาเรย์ว่าง
-    let nodesArray = JSON.parse(localStorage.getItem('sakuraTreeNodes')) || []; 
+    // ดึงข้อมูลเก่าที่เคยเซฟไว้ในเครื่อง (ถ้ามี)
+    let nodesArray = JSON.parse(localStorage.getItem('sakuraTreeNodes')) || [];
 
     const canvas = document.getElementById('treeCanvas');
     const ctx = canvas.getContext('2d');
 
-    // ฟังก์ชันรันอัตโนมัติเมื่อโหลดหน้าเว็บใหม่
+    // เมื่อเปิดหน้าเว็บ หรือ Refresh ให้วาดต้นไม้คืนมาทันที
     window.onload = function() {
         if (nodesArray.length > 0) {
-            // นำตัวเลขที่เก็บไว้มาสร้างต้นไม้ใหม่
             nodesArray.forEach(val => {
-                if (!root) root = new Node(val);
-                else insertNode(root, val);
+                buildTreeFromValue(val);
             });
             render();
         }
@@ -177,22 +175,28 @@
         
         if (isNaN(val)) return;
 
-        // ตรวจสอบว่ามีเลขนี้อยู่ในต้นไม้หรือยัง (ป้องกันเลขซ้ำ)
+        // ป้องกันเลขซ้ำเพื่อไม่ให้โครงสร้างสับสน
         if (nodesArray.includes(val)) {
-            alert("เลขนี้มีอยู่ในสวนแล้ว!");
+            alert("เลขนี้ปลูกไปแล้วจ้า!");
             input.value = '';
             return;
         }
 
-        // เก็บค่าลงใน Array และ Save ลง LocalStorage
+        // เก็บลงอาเรย์และบันทึกเข้า LocalStorage
         nodesArray.push(val);
         localStorage.setItem('sakuraTreeNodes', JSON.stringify(nodesArray));
 
-        if (!root) root = new Node(val);
-        else insertNode(root, val);
-
+        buildTreeFromValue(val);
         input.value = '';
         render();
+    }
+
+    function buildTreeFromValue(val) {
+        if (!root) {
+            root = new Node(val);
+        } else {
+            insertNode(root, val);
+        }
     }
 
     function insertNode(node, val) {
@@ -255,17 +259,17 @@
         document.getElementById('postText').innerText = getPostorder(root).join(' - ') || '-';
     }
 
+    // ฟังก์ชันล้างข้อมูลแบบกดปุ๊บลบปั๊บ
     function resetTree() {
-        if(confirm("ล้างข้อมูลทั้งหมดในสวนใช่หรือไม่?")) {
-            root = null;
-            nodesArray = [];
-            localStorage.removeItem('sakuraTreeNodes'); // ล้างข้อมูลใน Storage
-            render();
-        }
+        root = null;
+        nodesArray = [];
+        localStorage.removeItem('sakuraTreeNodes'); 
+        render();
     }
 </script>
 
 </body>
 </html>
+
 
 
