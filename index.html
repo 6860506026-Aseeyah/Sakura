@@ -65,7 +65,6 @@
             box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
         }
 
-        /* --- ส่วนที่เพิ่มใหม่: แผงข้อมูล Traversal --- */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -154,13 +153,40 @@
     }
 
     let root = null;
+    // ดึงข้อมูลอาเรย์จาก localStorage ถ้าไม่มีให้เริ่มที่อาเรย์ว่าง
+    let nodesArray = JSON.parse(localStorage.getItem('sakuraTreeNodes')) || []; 
+
     const canvas = document.getElementById('treeCanvas');
     const ctx = canvas.getContext('2d');
+
+    // ฟังก์ชันรันอัตโนมัติเมื่อโหลดหน้าเว็บใหม่
+    window.onload = function() {
+        if (nodesArray.length > 0) {
+            // นำตัวเลขที่เก็บไว้มาสร้างต้นไม้ใหม่
+            nodesArray.forEach(val => {
+                if (!root) root = new Node(val);
+                else insertNode(root, val);
+            });
+            render();
+        }
+    };
 
     function addNode() {
         const input = document.getElementById('nodeInput');
         const val = parseInt(input.value);
+        
         if (isNaN(val)) return;
+
+        // ตรวจสอบว่ามีเลขนี้อยู่ในต้นไม้หรือยัง (ป้องกันเลขซ้ำ)
+        if (nodesArray.includes(val)) {
+            alert("เลขนี้มีอยู่ในสวนแล้ว!");
+            input.value = '';
+            return;
+        }
+
+        // เก็บค่าลงใน Array และ Save ลง LocalStorage
+        nodesArray.push(val);
+        localStorage.setItem('sakuraTreeNodes', JSON.stringify(nodesArray));
 
         if (!root) root = new Node(val);
         else insertNode(root, val);
@@ -219,7 +245,6 @@
         ctx.fillText(node.val, x, y + 5);
     }
 
-    // ฟังก์ชันคำนวณลำดับ (อ้างอิงหลักการจากรูปภาพ)
     function getPreorder(n, r=[]) { if(n){ r.push(n.val); getPreorder(n.left, r); getPreorder(n.right, r); } return r; }
     function getInorder(n, r=[]) { if(n){ getInorder(n.left, r); r.push(n.val); getInorder(n.right, r); } return r; }
     function getPostorder(n, r=[]) { if(n){ getPostorder(n.left, r); getPostorder(n.right, r); r.push(n.val); } return r; }
@@ -231,11 +256,16 @@
     }
 
     function resetTree() {
-        root = null;
-        render();
+        if(confirm("ล้างข้อมูลทั้งหมดในสวนใช่หรือไม่?")) {
+            root = null;
+            nodesArray = [];
+            localStorage.removeItem('sakuraTreeNodes'); // ล้างข้อมูลใน Storage
+            render();
+        }
     }
 </script>
 
 </body>
 </html>
+
 
