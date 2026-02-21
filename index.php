@@ -3,7 +3,7 @@
 $host     = 'trees_db'; 
 $user     = 'Sakura';   
 $database = 'treedb';   
-$password = 'Aseeyahchekamoh'; 
+$password = '123456'; 
 
 $conn = new mysqli($host, $user, $password, $database);
 
