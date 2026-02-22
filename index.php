@@ -19,7 +19,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['node_val'])) {
     exit();
 }
 
-// 3. ส่วนแก้ไขการลบ (แยกเงื่อนไขให้เด็ดขาด)
+// 3. ส่วนแก้ไข: ลบทีละอัน (Delete Specific Node)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_val'])) {
+    $del_val = intval($_POST['delete_val']);
+    // ลบเฉพาะแถวที่มีค่าตรงกับที่ระบุ (ลบตัวแรกที่เจอหรือทั้งหมดที่มีค่าเท่ากัน)
+    $conn->query("DELETE FROM sakura_nodes WHERE node_value = '$del_val' LIMIT 1");
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
+// 4. เมื่อกด "ล้างสวน" (ล้างทั้งหมดเหมือนเดิม)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_tree'])) {
     $conn->query("DELETE FROM sakura_nodes");
     $conn->query("ALTER TABLE sakura_nodes AUTO_INCREMENT = 1");
@@ -27,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_tree'])) {
     exit();
 }
 
-// 4. ดึงข้อมูลมาแสดงผล
+// 5. ดึงข้อมูลมาแสดงผล
 $db_nodes = [];
 $res = $conn->query("SELECT node_value FROM sakura_nodes ORDER BY id ASC");
 if ($res) {
@@ -47,12 +56,16 @@ if ($res) {
         .container { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); padding: 30px; border-radius: 40px; box-shadow: 0 15px 35px rgba(255, 105, 180, 0.2); text-align: center; width: 90%; max-width: 900px; border: 2px solid #fff; }
         h1 { color: #d81b60; font-size: 32px; margin-bottom: 25px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         
-        .form-group { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .form-container { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 20px; }
+        .form-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+        
         input { padding: 12px; border: 2px solid #ffb6c1; border-radius: 15px; width: 80px; text-align: center; font-size: 16px; outline: none; }
         
-        .btn-insert { padding: 12px 25px; background: #ff69b4; color: white; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-reset { padding: 12px 25px; background: #90a4ae; color: white; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { transform: scale(1.05); opacity: 0.9; }
+        .btn { padding: 12px 20px; color: white; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-insert { background: #ff69b4; }
+        .btn-delete { background: #ef5350; }
+        .btn-reset { background: #90a4ae; }
+        .btn:hover { transform: scale(1.05); opacity: 0.9; }
         
         canvas { background: white; border-radius: 20px; border: 1px solid #f8bbd0; max-width: 100%; margin-bottom: 20px; }
         
@@ -75,15 +88,22 @@ if ($res) {
 <div class="container">
     <h1>🌸 Sakura Tree Garden 🌸</h1>
     
-    <div class="form-group">
-        <form method="POST" style="display: inline-flex; gap: 10px;">
-            <input type="number" name="node_val" placeholder="เลข" required>
-            <button type="submit" class="btn-insert">ปลูก Node</button>
-        </form>
-        
-        <form method="POST" style="display: inline-flex;">
-            <button type="submit" name="reset_tree" class="btn-reset">ล้างสวน</button>
-        </form>
+    <div class="form-container">
+        <div class="form-row">
+            <form method="POST" style="display: flex; gap: 5px;">
+                <input type="number" name="node_val" placeholder="เลข" required>
+                <button type="submit" class="btn btn-insert">ปลูก Node</button>
+            </form>
+
+            <form method="POST" style="display: flex; gap: 5px;">
+                <input type="number" name="delete_val" placeholder="เลข" required>
+                <button type="submit" class="btn btn-delete">ลบ Node</button>
+            </form>
+
+            <form method="POST">
+                <button type="submit" name="reset_tree" class="btn btn-reset">ล้างทั้งหมด</button>
+            </form>
+        </div>
     </div>
 
     <canvas id="treeCanvas" width="800" height="400"></canvas>
