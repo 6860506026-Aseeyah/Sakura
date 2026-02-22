@@ -11,7 +11,7 @@ $conn = new mysqli($host, $user, $pass, $db);
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['node_val'])) {
     $val = intval($_POST['node_val']);
     // ใช้ชื่อคอลัมน์ node_value ตามที่โชว์ใน Terminal ของคุณ
-    $conn->query("INSERT INTO sakura_nodes (node_value) VALUES ($val)");
+    $conn->query("INSERT INTO sakura_nodes (node_value) VALUES ('$val')");
     header("Location: " . $_SERVER['PHP_SELF']);
     exit();
 }
