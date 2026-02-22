@@ -1,5 +1,5 @@
 <?php
-// 1. เชื่อมต่อฐานข้อมูล (ดึงค่าจาก Environment Settings)
+// 1. เชื่อมต่อฐานข้อมูล
 $host = getenv('DB_HOST');
 $user = getenv('DB_USER');
 $pass = getenv('DB_PASS');
@@ -42,7 +42,7 @@ if ($res) {
     <meta charset="UTF-8">
     <title>Sakura Tree Garden</title>
     <style>
-        body { margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; font-family: 'Tahoma', sans-serif; background: #fce4ec; background: linear-gradient(180deg, #ffdee9 0%, #b5fffc 100%); padding: 20px 0; }
+        body { margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; font-family: 'Tahoma', sans-serif; background: linear-gradient(180deg, #ffdee9 0%, #b5fffc 100%); padding: 20px 0; }
         .container { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); padding: 30px; border-radius: 40px; box-shadow: 0 15px 35px rgba(255, 105, 180, 0.2); text-align: center; width: 90%; max-width: 900px; border: 2px solid #fff; }
         h1 { color: #d81b60; font-size: 32px; margin-bottom: 25px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         input { padding: 12px; border: 2px solid #ffb6c1; border-radius: 15px; width: 80px; text-align: center; font-size: 16px; outline: none; margin-bottom: 10px; }
@@ -52,9 +52,18 @@ if ($res) {
         canvas { background: white; border-radius: 20px; border: 1px solid #f8bbd0; max-width: 100%; margin: 20px 0; }
         .bottom-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; }
         .panel { background: white; padding: 20px; border-radius: 25px; border: 1px solid #f8bbd0; text-align: left; }
-        .panel h3 { color: #d81b60; margin-top: 0; font-size: 18px; border-bottom: 2px solid #fce4ec; padding-bottom: 10px; }
-        .output-row { margin: 10px 0; display: flex; justify-content: space-between; }
-        .output-label { font-weight: bold; color: #ad1457; }
+        .panel h3 { color: #d81b60; margin-top: 0; font-size: 18px; border-bottom: 2px solid #fce4ec; padding-bottom: 10px; margin-bottom: 15px; }
+        
+        /* แก้ไขส่วนที่ตัวเลขอยู่ไกลกัน */
+        .output-row { 
+            margin: 12px 0; 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; /* ทำให้หัวข้อกับตัวเลขอยู่ใกล้กัน */
+        }
+        .output-label { font-weight: bold; color: #ad1457; min-width: 85px; }
+        .output-value { color: #880e4f; font-weight: bold; letter-spacing: 1px; }
+
         .traversal-info { margin-bottom: 15px; }
         .dot { height: 12px; width: 12px; background-color: #f8bbd0; border-radius: 50%; display: inline-block; margin-right: 10px; border: 2px solid #ff69b4; }
         .method-title { font-weight: bold; color: #d81b60; }
@@ -79,15 +88,15 @@ if ($res) {
             <h3>ลำดับที่ได้ (Output):</h3>
             <div class="output-row">
                 <span class="output-label">Preorder:</span>
-                <span id="preText" style="color: #880e4f;">-</span>
+                <span id="preText" class="output-value">-</span>
             </div>
             <div class="output-row">
                 <span class="output-label">Inorder:</span>
-                <span id="inText" style="color: #880e4f;">-</span>
+                <span id="inText" class="output-value">-</span>
             </div>
             <div class="output-row">
                 <span class="output-label">Postorder:</span>
-                <span id="postText" style="color: #880e4f;">-</span>
+                <span id="postText" class="output-value">-</span>
             </div>
         </div>
 
