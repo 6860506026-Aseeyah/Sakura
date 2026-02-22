@@ -19,9 +19,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['node_val'])) {
     exit();
 }
 
-// 3. เมื่อกด "ล้างสวน"
+// 3. แก้ไขส่วนการลบ (ใช้ DELETE เพื่อความชัวร์)
 if (isset($_POST['reset_tree'])) {
-    $conn->query("TRUNCATE TABLE sakura_nodes");
+    $conn->query("DELETE FROM sakura_nodes"); // ลบข้อมูลทั้งหมดในตาราง
+    $conn->query("ALTER TABLE sakura_nodes AUTO_INCREMENT = 1"); // รีเซ็ตตัวนับ ID
     header("Location: " . $_SERVER['PHP_SELF']);
     exit();
 }
@@ -54,13 +55,7 @@ if ($res) {
         .panel { background: white; padding: 20px; border-radius: 25px; border: 1px solid #f8bbd0; text-align: left; }
         .panel h3 { color: #d81b60; margin-top: 0; font-size: 18px; border-bottom: 2px solid #fce4ec; padding-bottom: 10px; margin-bottom: 15px; }
         
-        /* แก้ไขส่วนที่ตัวเลขอยู่ไกลกัน */
-        .output-row { 
-            margin: 12px 0; 
-            display: flex; 
-            align-items: center; 
-            gap: 15px; /* ทำให้หัวข้อกับตัวเลขอยู่ใกล้กัน */
-        }
+        .output-row { margin: 12px 0; display: flex; align-items: center; gap: 15px; }
         .output-label { font-weight: bold; color: #ad1457; min-width: 85px; }
         .output-value { color: #880e4f; font-weight: bold; letter-spacing: 1px; }
 
@@ -78,7 +73,7 @@ if ($res) {
     <form method="POST">
         <input type="number" name="node_val" placeholder="เลข" required>
         <button type="submit" class="btn-insert">ปลูก Node</button>
-        <button type="submit" name="reset_tree" class="btn-reset">ล้างสวน</button>
+        <button type="submit" name="reset_tree" value="1" class="btn-reset">ล้างสวน</button>
     </form>
 
     <canvas id="treeCanvas" width="800" height="400"></canvas>
