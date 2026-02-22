@@ -19,10 +19,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['node_val'])) {
     exit();
 }
 
-// 3. แก้ไขส่วนการลบ (ใช้ DELETE เพื่อความชัวร์)
-if (isset($_POST['reset_tree'])) {
-    $conn->query("DELETE FROM sakura_nodes"); // ลบข้อมูลทั้งหมดในตาราง
-    $conn->query("ALTER TABLE sakura_nodes AUTO_INCREMENT = 1"); // รีเซ็ตตัวนับ ID
+// 3. ส่วนแก้ไขการลบ (แยกเงื่อนไขให้เด็ดขาด)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_tree'])) {
+    $conn->query("DELETE FROM sakura_nodes");
+    $conn->query("ALTER TABLE sakura_nodes AUTO_INCREMENT = 1");
     header("Location: " . $_SERVER['PHP_SELF']);
     exit();
 }
@@ -46,12 +46,17 @@ if ($res) {
         body { margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; font-family: 'Tahoma', sans-serif; background: linear-gradient(180deg, #ffdee9 0%, #b5fffc 100%); padding: 20px 0; }
         .container { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); padding: 30px; border-radius: 40px; box-shadow: 0 15px 35px rgba(255, 105, 180, 0.2); text-align: center; width: 90%; max-width: 900px; border: 2px solid #fff; }
         h1 { color: #d81b60; font-size: 32px; margin-bottom: 25px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        input { padding: 12px; border: 2px solid #ffb6c1; border-radius: 15px; width: 80px; text-align: center; font-size: 16px; outline: none; margin-bottom: 10px; }
+        
+        .form-group { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        input { padding: 12px; border: 2px solid #ffb6c1; border-radius: 15px; width: 80px; text-align: center; font-size: 16px; outline: none; }
+        
         .btn-insert { padding: 12px 25px; background: #ff69b4; color: white; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-reset { padding: 12px 25px; background: #90a4ae; color: white; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; margin-left: 5px; transition: 0.3s; }
+        .btn-reset { padding: 12px 25px; background: #90a4ae; color: white; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         button:hover { transform: scale(1.05); opacity: 0.9; }
-        canvas { background: white; border-radius: 20px; border: 1px solid #f8bbd0; max-width: 100%; margin: 20px 0; }
-        .bottom-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; }
+        
+        canvas { background: white; border-radius: 20px; border: 1px solid #f8bbd0; max-width: 100%; margin-bottom: 20px; }
+        
+        .bottom-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .panel { background: white; padding: 20px; border-radius: 25px; border: 1px solid #f8bbd0; text-align: left; }
         .panel h3 { color: #d81b60; margin-top: 0; font-size: 18px; border-bottom: 2px solid #fce4ec; padding-bottom: 10px; margin-bottom: 15px; }
         
@@ -70,11 +75,16 @@ if ($res) {
 <div class="container">
     <h1>🌸 Sakura Tree Garden 🌸</h1>
     
-    <form method="POST">
-        <input type="number" name="node_val" placeholder="เลข" required>
-        <button type="submit" class="btn-insert">ปลูก Node</button>
-        <button type="submit" name="reset_tree" value="1" class="btn-reset">ล้างสวน</button>
-    </form>
+    <div class="form-group">
+        <form method="POST" style="display: inline-flex; gap: 10px;">
+            <input type="number" name="node_val" placeholder="เลข" required>
+            <button type="submit" class="btn-insert">ปลูก Node</button>
+        </form>
+        
+        <form method="POST" style="display: inline-flex;">
+            <button type="submit" name="reset_tree" class="btn-reset">ล้างสวน</button>
+        </form>
+    </div>
 
     <canvas id="treeCanvas" width="800" height="400"></canvas>
 
