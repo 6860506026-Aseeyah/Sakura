@@ -1,5 +1,5 @@
 <?php
-// 1. เชื่อมต่อฐานข้อมูล
+// 1. เชื่อมต่อฐานข้อมูล (MariaDB บน Dokploy)
 $host = getenv('DB_HOST');
 $user = getenv('DB_USER');
 $pass = getenv('DB_PASS');
@@ -19,24 +19,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['node_val'])) {
     exit();
 }
 
-// 3. ส่วนแก้ไข: ลบทีละอัน (Delete Specific Node)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_val'])) {
-    $del_val = intval($_POST['delete_val']);
-    // ลบเฉพาะแถวที่มีค่าตรงกับที่ระบุ (ลบตัวแรกที่เจอหรือทั้งหมดที่มีค่าเท่ากัน)
-    $conn->query("DELETE FROM sakura_nodes WHERE node_value = '$del_val' LIMIT 1");
+// 3. เมื่อกด "ล้างสวน" (ถ้ามีเลข=ลบเลขนั้น, ถ้าว่าง=ล้างหมด)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_reset'])) {
+    $target_val = $_POST['reset_val'];
+
+    if (!empty($target_val)) {
+        // กรณีใส่เลข: ลบเฉพาะค่าที่ระบุ 1 แถว
+        $val_to_del = intval($target_val);
+        $conn->query("DELETE FROM sakura_nodes WHERE node_value = '$val_to_del' LIMIT 1");
+    } else {
+        // กรณีเว้นว่าง: ล้างทั้งหมด
+        $conn->query("DELETE FROM sakura_nodes");
+        $conn->query("ALTER TABLE sakura_nodes AUTO_INCREMENT = 1");
+    }
     header("Location: " . $_SERVER['PHP_SELF']);
     exit();
 }
 
-// 4. เมื่อกด "ล้างสวน" (ล้างทั้งหมดเหมือนเดิม)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_tree'])) {
-    $conn->query("DELETE FROM sakura_nodes");
-    $conn->query("ALTER TABLE sakura_nodes AUTO_INCREMENT = 1");
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit();
-}
-
-// 5. ดึงข้อมูลมาแสดงผล
+// 4. ดึงข้อมูลจากฐานข้อมูลมาวาดต้นไม้
 $db_nodes = [];
 $res = $conn->query("SELECT node_value FROM sakura_nodes ORDER BY id ASC");
 if ($res) {
@@ -50,20 +50,17 @@ if ($res) {
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>Sakura Tree Garden</title>
+    <title>Sakura Tree Garden - MariaDB</title>
     <style>
         body { margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; font-family: 'Tahoma', sans-serif; background: linear-gradient(180deg, #ffdee9 0%, #b5fffc 100%); padding: 20px 0; }
         .container { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); padding: 30px; border-radius: 40px; box-shadow: 0 15px 35px rgba(255, 105, 180, 0.2); text-align: center; width: 90%; max-width: 900px; border: 2px solid #fff; }
-        h1 { color: #d81b60; font-size: 32px; margin-bottom: 25px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        h1 { color: #d81b60; font-size: 32px; margin-bottom: 25px; }
         
-        .form-container { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 20px; }
-        .form-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
-        
+        .form-group { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
         input { padding: 12px; border: 2px solid #ffb6c1; border-radius: 15px; width: 80px; text-align: center; font-size: 16px; outline: none; }
         
-        .btn { padding: 12px 20px; color: white; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn { padding: 12px 25px; color: white; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-insert { background: #ff69b4; }
-        .btn-delete { background: #ef5350; }
         .btn-reset { background: #90a4ae; }
         .btn:hover { transform: scale(1.05); opacity: 0.9; }
         
@@ -73,14 +70,18 @@ if ($res) {
         .panel { background: white; padding: 20px; border-radius: 25px; border: 1px solid #f8bbd0; text-align: left; }
         .panel h3 { color: #d81b60; margin-top: 0; font-size: 18px; border-bottom: 2px solid #fce4ec; padding-bottom: 10px; margin-bottom: 15px; }
         
-        .output-row { margin: 12px 0; display: flex; align-items: center; gap: 15px; }
-        .output-label { font-weight: bold; color: #ad1457; min-width: 85px; }
-        .output-value { color: #880e4f; font-weight: bold; letter-spacing: 1px; }
+        /* จัดแถว Output และ Traversal */
+        .output-row, .traversal-info { 
+            margin: 12px 0; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+        }
+        .label-text { font-weight: bold; color: #ad1457; min-width: 90px; }
+        .value-text { color: #880e4f; font-weight: bold; }
+        .formula-text { font-size: 14px; color: #ad1457; background: #fff0f5; padding: 2px 10px; border-radius: 10px; }
 
-        .traversal-info { margin-bottom: 15px; }
-        .dot { height: 12px; width: 12px; background-color: #f8bbd0; border-radius: 50%; display: inline-block; margin-right: 10px; border: 2px solid #ff69b4; }
-        .method-title { font-weight: bold; color: #d81b60; }
-        .method-desc { font-size: 13px; color: #880e4f; margin-left: 26px; }
+        .dot { height: 10px; width: 10px; background-color: #ff69b4; border-radius: 50%; display: inline-block; }
     </style>
 </head>
 <body>
@@ -88,22 +89,16 @@ if ($res) {
 <div class="container">
     <h1>🌸 Sakura Tree Garden 🌸</h1>
     
-    <div class="form-container">
-        <div class="form-row">
-            <form method="POST" style="display: flex; gap: 5px;">
-                <input type="number" name="node_val" placeholder="เลข" required>
-                <button type="submit" class="btn btn-insert">ปลูก Node</button>
-            </form>
-
-            <form method="POST" style="display: flex; gap: 5px;">
-                <input type="number" name="delete_val" placeholder="เลข" required>
-                <button type="submit" class="btn btn-delete">ลบ Node</button>
-            </form>
-
-            <form method="POST">
-                <button type="submit" name="reset_tree" class="btn btn-reset">ล้างทั้งหมด</button>
-            </form>
-        </div>
+    <div class="form-group">
+        <form method="POST" style="display: inline-flex; gap: 10px;">
+            <input type="number" name="node_val" placeholder="เลข" required>
+            <button type="submit" class="btn btn-insert">ปลูก Node</button>
+        </form>
+        
+        <form method="POST" style="display: inline-flex; gap: 10px;">
+            <input type="number" name="reset_val" placeholder="เลข">
+            <button type="submit" name="action_reset" class="btn btn-reset">ล้างสวน</button>
+        </form>
     </div>
 
     <canvas id="treeCanvas" width="800" height="400"></canvas>
@@ -112,32 +107,35 @@ if ($res) {
         <div class="panel">
             <h3>ลำดับที่ได้ (Output):</h3>
             <div class="output-row">
-                <span class="output-label">Preorder:</span>
-                <span id="preText" class="output-value">-</span>
+                <span class="label-text">Preorder:</span>
+                <span id="preText" class="value-text">-</span>
             </div>
             <div class="output-row">
-                <span class="output-label">Inorder:</span>
-                <span id="inText" class="output-value">-</span>
+                <span class="label-text">Inorder:</span>
+                <span id="inText" class="value-text">-</span>
             </div>
             <div class="output-row">
-                <span class="output-label">Postorder:</span>
-                <span id="postText" class="output-value">-</span>
+                <span class="label-text">Postorder:</span>
+                <span id="postText" class="value-text">-</span>
             </div>
         </div>
 
         <div class="panel">
             <h3>3 วิธีหลักในการ Traversal:</h3>
             <div class="traversal-info">
-                <div><span class="dot"></span><span class="method-title">Preorder:</span></div>
-                <div class="method-desc">Root → Left → Right</div>
+                <span class="dot"></span>
+                <span class="label-text">Preorder:</span>
+                <span class="formula-text">Root → Left → Right</span>
             </div>
             <div class="traversal-info">
-                <div><span class="dot"></span><span class="method-title">Inorder:</span></div>
-                <div class="method-desc">Left → Root → Right</div>
+                <span class="dot"></span>
+                <span class="label-text">Inorder:</span>
+                <span class="formula-text">Left → Root → Right</span>
             </div>
             <div class="traversal-info">
-                <div><span class="dot"></span><span class="method-title">Postorder:</span></div>
-                <div class="method-desc">Left → Right → Root</div>
+                <span class="dot"></span>
+                <span class="label-text">Postorder:</span>
+                <span class="formula-text">Left → Right → Root</span>
             </div>
         </div>
     </div>
@@ -210,3 +208,4 @@ if ($res) {
 </script>
 </body>
 </html>
+
