@@ -1,9 +1,62 @@
+<?php
+/**
+ * 🌸 Sakura Binary Tree Garden (PHP Version)
+ * เชื่อมต่อกับ MariaDB ผ่าน Environment Variables จาก Dokploy
+ */
+
+// 1. ตั้งค่าการเชื่อมต่อฐานข้อมูล
+$host = getenv('DB_HOST') ?: 'localhost';
+$user = getenv('DB_USER') ?: 'root';
+$pass = getenv('DB_PASS') ?: '';
+$db   = getenv('DB_NAME') ?: 'treedb';
+
+$conn = new mysqli($host, $user, $pass, $db);
+
+// ตรวจสอบการเชื่อมต่อ
+if ($conn->connect_error) {
+    // ถ้าเชื่อมไม่ได้จะยังทำงานต่อได้ (เผื่อรันในเครื่อง) แต่แจ้งเตือนเบาๆ
+    $db_status = "Disconnected: " . $conn->connect_error;
+} else {
+    $db_status = "Connected to MariaDB 🌸";
+}
+
+// 2. จัดการเมื่อมีการส่งข้อมูล (ปลูก Node)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['node_val'])) {
+    $val = intval($_POST['node_val']);
+    $stmt = $conn->prepare("INSERT INTO sakura_nodes (node_value) VALUES (?)");
+    $stmt->bind_param("i", $val);
+    $stmt->execute();
+    $stmt->close();
+    
+    // Redirect เพื่อป้องกันการส่งข้อมูลซ้ำเมื่อกด Refresh
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
+// 3. จัดการเมื่อกด "ล้างสวน"
+if (isset($_POST['reset_tree'])) {
+    $conn->query("TRUNCATE TABLE sakura_nodes");
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
+// 4. ดึงข้อมูลโหนดทั้งหมดจากฐานข้อมูล
+$db_nodes = [];
+$result = $conn->query("SELECT node_value FROM sakura_nodes ORDER BY id ASC");
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $db_nodes[] = (int)$row['node_value'];
+    }
+}
+$conn->close();
+?>
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sakura Binary Tree Garden</title>
+    <title>Sakura Binary Tree Garden (Database Version)</title>
     <style>
         body {
             margin: 0;
@@ -29,7 +82,8 @@
             max-width: 900px;
         }
 
-        h1 { color: #d81b60; margin-bottom: 20px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+        h1 { color: #d81b60; margin-bottom: 5px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+        .db-badge { font-size: 10px; color: #ad1457; margin-bottom: 20px; display: block; }
 
         .controls { margin-bottom: 20px; }
 
@@ -65,7 +119,6 @@
             box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
         }
 
-        /* --- ส่วนที่เพิ่มใหม่: แผงข้อมูล Traversal --- */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -90,7 +143,7 @@
             padding-bottom: 5px;
         }
 
-        .order-row { margin: 8px 0; font-size: 14px; color: #444; }
+        .order-row { margin: 8px 0; font-size: 14px; color: #444; word-break: break-all; }
         .tag { font-weight: bold; color: #ad1457; display: inline-block; width: 90px; }
         
         .guide-item {
@@ -118,28 +171,35 @@
 
 <div class="container">
     <h1>🌸 Sakura Tree Garden 🌸</h1>
+    <span class="db-badge"><?php echo $db_status; ?></span>
     
     <div class="controls">
-        <input type="number" id="nodeInput" placeholder="เลข">
-        <button onclick="addNode()">ปลูก Node</button>
-        <button onclick="resetTree()" style="background:#90a4ae">ล้างสวน</button>
+        <form method="POST" style="display: inline-block;">
+            <input type="number" name="node_val" placeholder="เลข" required>
+            <button type="submit">ปลูก Node</button>
+        </form>
+        
+        <form method="POST" style="display: inline-block;">
+            <input type="hidden" name="reset_tree" value="1">
+            <button type="submit" style="background:#90a4ae">ล้างสวน</button>
+        </form>
     </div>
 
     <canvas id="treeCanvas" width="800" height="400"></canvas>
 
     <div class="info-grid">
         <div class="result-panel">
-            <span class="panel-title">ลำดับที่ได้ (Output):</span>
+            <span class="panel-title">ลำดับที่ได้ (จากฐานข้อมูล):</span>
             <div class="order-row"><span class="tag">Preorder:</span> <span id="preText">-</span></div>
             <div class="order-row"><span class="tag">Inorder:</span> <span id="inText">-</span></div>
             <div class="order-row"><span class="tag">Postorder:</span> <span id="postText">-</span></div>
         </div>
 
         <div class="guide-panel">
-            <span class="panel-title">3 วิธีหลักในการ Traversal:</span>
-            <div class="guide-item"><span class="dot"></span> <strong>Preorder:</strong> Root → Left → Right</div>
-            <div class="guide-item"><span class="dot"></span> <strong>Inorder:</strong> Left → Root → Right</div>
-            <div class="guide-item"><span class="dot"></span> <strong>Postorder:</strong> Left → Right → Root</div>
+            <span class="panel-title">หลักการ Binary Search Tree:</span>
+            <div class="guide-item"><span class="dot"></span> น้อยกว่า Root ไปทาง <strong>ซ้าย (Left)</strong></div>
+            <div class="guide-item"><span class="dot"></span> มากกว่า Root ไปทาง <strong>ขวา (Right)</strong></div>
+            <div class="guide-item"><span class="dot" style="background:#ff69b4"></span> บันทึกข้อมูลลงใน <strong>MariaDB</strong></div>
         </div>
     </div>
 </div>
@@ -153,19 +213,19 @@
         }
     }
 
+    // รับข้อมูลจาก PHP ที่ดึงมาจาก Database
+    const initialNodes = <?php echo json_encode($db_nodes); ?>;
     let root = null;
     const canvas = document.getElementById('treeCanvas');
     const ctx = canvas.getContext('2d');
 
-    function addNode() {
-        const input = document.getElementById('nodeInput');
-        const val = parseInt(input.value);
-        if (isNaN(val)) return;
-
-        if (!root) root = new Node(val);
-        else insertNode(root, val);
-
-        input.value = '';
+    // ฟังก์ชันสร้างต้นไม้จากข้อมูลใน DB
+    function buildTreeFromDB() {
+        if (initialNodes.length === 0) return;
+        initialNodes.forEach(val => {
+            if (!root) root = new Node(val);
+            else insertNode(root, val);
+        });
         render();
     }
 
@@ -219,7 +279,6 @@
         ctx.fillText(node.val, x, y + 5);
     }
 
-    // ฟังก์ชันคำนวณลำดับ (อ้างอิงหลักการจากรูปภาพ)
     function getPreorder(n, r=[]) { if(n){ r.push(n.val); getPreorder(n.left, r); getPreorder(n.right, r); } return r; }
     function getInorder(n, r=[]) { if(n){ getInorder(n.left, r); r.push(n.val); getInorder(n.right, r); } return r; }
     function getPostorder(n, r=[]) { if(n){ getPostorder(n.left, r); getPostorder(n.right, r); r.push(n.val); } return r; }
@@ -230,11 +289,10 @@
         document.getElementById('postText').innerText = getPostorder(root).join(' - ') || '-';
     }
 
-    function resetTree() {
-        root = null;
-        render();
-    }
+    // เริ่มสร้างต้นไม้เมื่อโหลดหน้าเว็บ
+    buildTreeFromDB();
 </script>
 
 </body>
 </html>
+
