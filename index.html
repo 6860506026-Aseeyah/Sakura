@@ -52,10 +52,13 @@
             cursor: pointer;
             font-weight: bold;
             transition: 0.3s;
-            margin-left: 5px;
+            margin: 5px;
         }
 
         button:hover { background: #e91e63; transform: scale(1.05); }
+
+        .btn-reset { background: #90a4ae; }
+        .btn-reset:hover { background: #607d8b; }
 
         canvas {
             background: rgba(255, 255, 255, 0.4);
@@ -65,7 +68,6 @@
             box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
         }
 
-        /* --- ส่วนที่เพิ่มใหม่: แผงข้อมูล Traversal --- */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -122,7 +124,7 @@
     <div class="controls">
         <input type="number" id="nodeInput" placeholder="เลข">
         <button onclick="addNode()">ปลูก Node</button>
-        <button onclick="resetTree()" style="background:#90a4ae">ล้างสวน</button>
+        <button class="btn-reset" onclick="handleClear()">ลบสวน/เลข</button>
     </div>
 
     <canvas id="treeCanvas" width="800" height="400"></canvas>
@@ -136,10 +138,9 @@
         </div>
 
         <div class="guide-panel">
-            <span class="panel-title">3 วิธีหลักในการ Traversal:</span>
-            <div class="guide-item"><span class="dot"></span> <strong>Preorder:</strong> Root → Left → Right</div>
-            <div class="guide-item"><span class="dot"></span> <strong>Inorder:</strong> Left → Root → Right</div>
-            <div class="guide-item"><span class="dot"></span> <strong>Postorder:</strong> Left → Right → Root</div>
+            <span class="panel-title">วิธีลบข้อมูล:</span>
+            <div class="guide-item"><span class="dot" style="background:#ff69b4"></span> พิมพ์เลขแล้วกดปุ่มเทาเพื่อลบทีละจุด</div>
+            <div class="guide-item"><span class="dot" style="background:#90a4ae"></span> เว้นว่างแล้วกดปุ่มเทาเพื่อล้างทั้งสวน</div>
         </div>
     </div>
 </div>
@@ -162,8 +163,11 @@
         const val = parseInt(input.value);
         if (isNaN(val)) return;
 
-        if (!root) root = new Node(val);
-        else insertNode(root, val);
+        if (!root) {
+            root = new Node(val);
+        } else {
+            insertNode(root, val);
+        }
 
         input.value = '';
         render();
@@ -177,6 +181,51 @@
             if (!node.right) node.right = new Node(val);
             else insertNode(node.right, val);
         }
+        // ถ้าค่าเท่ากัน (Duplicate) จะไม่ทำอะไรใน BST ทั่วไป
+    }
+
+    // ฟังก์ชันตัดสินใจการลบ
+    function handleClear() {
+        const input = document.getElementById('nodeInput');
+        const val = parseInt(input.value);
+
+        if (isNaN(val)) {
+            if(confirm("ต้องการล้างสวนทั้งหมดใช่หรือไม่?")) {
+                root = null;
+            }
+        } else {
+            root = deleteNode(root, val);
+            input.value = ''; 
+        }
+        render();
+    }
+
+    function deleteNode(node, val) {
+        if (!node) return null;
+
+        if (val < node.val) {
+            node.left = deleteNode(node.left, val);
+        } else if (val > node.val) {
+            node.right = deleteNode(node.right, val);
+        } else {
+            // เจอเลขที่ต้องการลบ
+            if (!node.left) return node.right;
+            if (!node.right) return node.left;
+
+            // กรณีมีลูก 2 คน: หาตัวน้อยสุดฝั่งขวามาแทน
+            node.val = findMin(node.right);
+            node.right = deleteNode(node.right, node.val);
+        }
+        return node;
+    }
+
+    function findMin(node) {
+        let minV = node.val;
+        while (node.left) {
+            minV = node.left.val;
+            node = node.left;
+        }
+        return minV;
     }
 
     function render() {
@@ -193,7 +242,7 @@
             ctx.strokeStyle = '#ffb6c1';
             ctx.lineWidth = 3;
             ctx.stroke();
-            drawTree(node.left, x - space, y + 70, space / 1.9);
+            drawTree(node.left, x - space, y + 70, space / 2);
         }
         if (node.right) {
             ctx.beginPath();
@@ -202,7 +251,7 @@
             ctx.strokeStyle = '#ffb6c1';
             ctx.lineWidth = 3;
             ctx.stroke();
-            drawTree(node.right, x + space, y + 70, space / 1.9);
+            drawTree(node.right, x + space, y + 70, space / 2);
         }
 
         ctx.beginPath();
@@ -219,7 +268,6 @@
         ctx.fillText(node.val, x, y + 5);
     }
 
-    // ฟังก์ชันคำนวณลำดับ (อ้างอิงหลักการจากรูปภาพ)
     function getPreorder(n, r=[]) { if(n){ r.push(n.val); getPreorder(n.left, r); getPreorder(n.right, r); } return r; }
     function getInorder(n, r=[]) { if(n){ getInorder(n.left, r); r.push(n.val); getInorder(n.right, r); } return r; }
     function getPostorder(n, r=[]) { if(n){ getPostorder(n.left, r); getPostorder(n.right, r); r.push(n.val); } return r; }
@@ -228,11 +276,6 @@
         document.getElementById('preText').innerText = getPreorder(root).join(' - ') || '-';
         document.getElementById('inText').innerText = getInorder(root).join(' - ') || '-';
         document.getElementById('postText').innerText = getPostorder(root).join(' - ') || '-';
-    }
-
-    function resetTree() {
-        root = null;
-        render();
     }
 </script>
 
