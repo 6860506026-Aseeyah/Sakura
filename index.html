@@ -52,13 +52,10 @@
             cursor: pointer;
             font-weight: bold;
             transition: 0.3s;
-            margin: 5px;
+            margin-left: 5px;
         }
 
         button:hover { background: #e91e63; transform: scale(1.05); }
-
-        .btn-reset { background: #90a4ae; }
-        .btn-reset:hover { background: #607d8b; }
 
         canvas {
             background: rgba(255, 255, 255, 0.4);
@@ -124,7 +121,7 @@
     <div class="controls">
         <input type="number" id="nodeInput" placeholder="เลข">
         <button onclick="addNode()">ปลูก Node</button>
-        <button class="btn-reset" onclick="handleClear()">ลบสวน/เลข</button>
+        <button onclick="resetTree()" style="background:#90a4ae">ล้างสวน</button>
     </div>
 
     <canvas id="treeCanvas" width="800" height="400"></canvas>
@@ -138,9 +135,10 @@
         </div>
 
         <div class="guide-panel">
-            <span class="panel-title">วิธีลบข้อมูล:</span>
-            <div class="guide-item"><span class="dot" style="background:#ff69b4"></span> พิมพ์เลขแล้วกดปุ่มเทาเพื่อลบทีละจุด</div>
-            <div class="guide-item"><span class="dot" style="background:#90a4ae"></span> เว้นว่างแล้วกดปุ่มเทาเพื่อล้างทั้งสวน</div>
+            <span class="panel-title">3 วิธีหลักในการ Traversal:</span>
+            <div class="guide-item"><span class="dot"></span> <strong>Preorder:</strong> Root → Left → Right</div>
+            <div class="guide-item"><span class="dot"></span> <strong>Inorder:</strong> Left → Root → Right</div>
+            <div class="guide-item"><span class="dot"></span> <strong>Postorder:</strong> Left → Right → Root</div>
         </div>
     </div>
 </div>
@@ -155,22 +153,50 @@
     }
 
     let root = null;
+    // ดึงข้อมูลเก่าที่เคยเซฟไว้ในเครื่อง (ถ้ามี)
+    let nodesArray = JSON.parse(localStorage.getItem('sakuraTreeNodes')) || [];
+
     const canvas = document.getElementById('treeCanvas');
     const ctx = canvas.getContext('2d');
+
+    // เมื่อเปิดหน้าเว็บ หรือ Refresh ให้วาดต้นไม้คืนมาทันที
+    window.onload = function() {
+        if (nodesArray.length > 0) {
+            nodesArray.forEach(val => {
+                buildTreeFromValue(val);
+            });
+            render();
+        }
+    };
 
     function addNode() {
         const input = document.getElementById('nodeInput');
         const val = parseInt(input.value);
+        
         if (isNaN(val)) return;
 
+        // ป้องกันเลขซ้ำเพื่อไม่ให้โครงสร้างสับสน
+        if (nodesArray.includes(val)) {
+            alert("เลขนี้ปลูกไปแล้วจ้า!");
+            input.value = '';
+            return;
+        }
+
+        // เก็บลงอาเรย์และบันทึกเข้า LocalStorage
+        nodesArray.push(val);
+        localStorage.setItem('sakuraTreeNodes', JSON.stringify(nodesArray));
+
+        buildTreeFromValue(val);
+        input.value = '';
+        render();
+    }
+
+    function buildTreeFromValue(val) {
         if (!root) {
             root = new Node(val);
         } else {
             insertNode(root, val);
         }
-
-        input.value = '';
-        render();
     }
 
     function insertNode(node, val) {
@@ -181,51 +207,6 @@
             if (!node.right) node.right = new Node(val);
             else insertNode(node.right, val);
         }
-        // ถ้าค่าเท่ากัน (Duplicate) จะไม่ทำอะไรใน BST ทั่วไป
-    }
-
-    // ฟังก์ชันตัดสินใจการลบ
-    function handleClear() {
-        const input = document.getElementById('nodeInput');
-        const val = parseInt(input.value);
-
-        if (isNaN(val)) {
-            if(confirm("ต้องการล้างสวนทั้งหมดใช่หรือไม่?")) {
-                root = null;
-            }
-        } else {
-            root = deleteNode(root, val);
-            input.value = ''; 
-        }
-        render();
-    }
-
-    function deleteNode(node, val) {
-        if (!node) return null;
-
-        if (val < node.val) {
-            node.left = deleteNode(node.left, val);
-        } else if (val > node.val) {
-            node.right = deleteNode(node.right, val);
-        } else {
-            // เจอเลขที่ต้องการลบ
-            if (!node.left) return node.right;
-            if (!node.right) return node.left;
-
-            // กรณีมีลูก 2 คน: หาตัวน้อยสุดฝั่งขวามาแทน
-            node.val = findMin(node.right);
-            node.right = deleteNode(node.right, node.val);
-        }
-        return node;
-    }
-
-    function findMin(node) {
-        let minV = node.val;
-        while (node.left) {
-            minV = node.left.val;
-            node = node.left;
-        }
-        return minV;
     }
 
     function render() {
@@ -242,7 +223,7 @@
             ctx.strokeStyle = '#ffb6c1';
             ctx.lineWidth = 3;
             ctx.stroke();
-            drawTree(node.left, x - space, y + 70, space / 2);
+            drawTree(node.left, x - space, y + 70, space / 1.9);
         }
         if (node.right) {
             ctx.beginPath();
@@ -251,7 +232,7 @@
             ctx.strokeStyle = '#ffb6c1';
             ctx.lineWidth = 3;
             ctx.stroke();
-            drawTree(node.right, x + space, y + 70, space / 2);
+            drawTree(node.right, x + space, y + 70, space / 1.9);
         }
 
         ctx.beginPath();
@@ -276,6 +257,14 @@
         document.getElementById('preText').innerText = getPreorder(root).join(' - ') || '-';
         document.getElementById('inText').innerText = getInorder(root).join(' - ') || '-';
         document.getElementById('postText').innerText = getPostorder(root).join(' - ') || '-';
+    }
+
+    // ฟังก์ชันล้างข้อมูลแบบกดปุ๊บลบปั๊บ
+    function resetTree() {
+        root = null;
+        nodesArray = [];
+        localStorage.removeItem('sakuraTreeNodes'); 
+        render();
     }
 </script>
 
